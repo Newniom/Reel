@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Mobile UI Reels</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    html, body {
+      margin: 0;
+      background-color: #FCF9EA;
+      font-family: 'Segoe UI', sans-serif;
+      color: #333;
+      height: 100%;
+      scroll-snap-type: y mandatory;
+      overflow-y: scroll;
+    }
+    .reel-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 0 16px;
+      padding-bottom: 200px;
+    }
+    .reel-card, .load-more-card {
+      scroll-snap-align: center;
+      width: 100%;
+      max-width: 400px;
+      margin: 40px 0;
+      border: 2px solid #F0DFF1;
+      border-radius: 20px;
+      background-color: #fff;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+      overflow: hidden;
+      transition: transform 0.3s ease;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    .reel-card:hover, .load-more-card:hover {
+      transform: scale(1.02);
+    }
+    .reel {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 9/16;
+      border-top-left-radius: 20px;
+      border-top-right-radius: 20px;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+    iframe {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+    .info {
+      padding: 12px;
+      text-align: center;
+      border-bottom-left-radius: 20px;
+      border-bottom-right-radius: 20px;
+      background-color: #fff;
+      flex-grow: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+    .title {
+      font-size: 1rem;
+      font-weight: 500;
+      margin-bottom: 6px;
+    }
+    .stats {
+      font-size: 0.9rem;
+      color: #666;
+    }
+    .load-more-btn {
+      padding: 12px 24px;
+      font-size: 1rem;
+      background-color: #F0DFF1;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+      margin: 12px 0;
+    }
+    .load-more-btn:hover {
+      background-color: #e2cbe6;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="reel-container" id="reels"></div>
+
+  <script>
+    const apiKey = "AIzaSyAD0ayKvH8osFWhma4Yx2Hiqoh2IGZoLGE";
+    const query = "smartphone unbox";
+    const maxResults = 10;
+    let pageToken = "";
+    let loading = false;
+    let reachedEnd = false;
+
+    const container = document.getElementById("reels");
+
+    async function loadVideos() {
+      if (loading || reachedEnd) return;
+      loading = true;
+
+      try {
+        const searchRes = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&q=${query}&type=video&videoDuration=short&maxResults=${maxResults}&key=${apiKey}&pageToken=${pageToken}`);
+        const searchData = await searchRes.json();
+
+        if (!searchData.items || searchData.items.length === 0) {
+          reachedEnd = true;
+          showEndMessage();
+          return;
+        }
+
+        pageToken = searchData.nextPageToken || "";
+        if (!pageToken) reachedEnd = true;
+
+        const videoIds = searchData.items.map(item => item.id.videoId).join(",");
+        const snippets = {};
+        searchData.items.forEach(item => {
+          snippets[item.id.videoId] = item.snippet;
+        });
+
+        const statsRes = await fetch(`https://www.googleapis.com/youtube/v3/videos?part=statistics&id=${videoIds}&key=${apiKey}`);
+        const statsData = await statsRes.json();
+
+        statsData.items.forEach(item => {
+          const videoId = item.id;
+          const title = snippets[videoId]?.title || "Untitled";
+          const views = item.statistics.viewCount || "0";
+          const likes = item.statistics.likeCount || "0";
+
+          const card = document.createElement("div");
+          card.className = "reel-card";
+
+          card.innerHTML = `
+            <div class="reel">
+              <iframe src="https://www.youtube.com/embed/${videoId}" allowfullscreen></iframe>
+            </div>
+            <div class="info">
+              <div class="title">${title}</div>
+              <div class="stats">️ ${views} views · ${likes} likes</div>
+            </div>
+          `;
+
+          container.appendChild(card);
+        });
+
+        if (!reachedEnd) {
+          createLoadMoreCard();
+        } else {
+          showEndMessage();
+        }
+      } catch (err) {
+        console.error("Error loading videos:", err);
+      } finally {
+        loading = false;
+      }
+    }
+
+    function createLoadMoreCard() {
+      const card = document.createElement("div");
+      card.className = "load-more-card";
+      card.innerHTML = `
+        <button class="load-more-btn"> more Videos</button>
+      `;
+      container.appendChild(card);
+
+      card.querySelector(".load-more-btn").addEventListener("click", () => {
+        card.remove();
+        loadVideos();
+      });
+    }
+
+    function showEndMessage() {
+      const card = document.createElement("div");
+      card.className = "load-more-card";
+      card.innerHTML = `
+        <div class="info">
+          <div class="title">No more videos available</div>
+        </div>
+      `;
+      container.appendChild(card);
+    }
+
+    loadVideos();
+  </script>
+</body>
+</html>
