@@ -2,33 +2,35 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Mobile UI Reels</title>
+  <title>Tech UI Reels</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
     html, body {
       margin: 0;
-      background-color: #0E012F;
+      background-color: #171109;
       font-family: 'Segoe UI', sans-serif;
       color: #333;
       height: 100%;
-      scroll-snap-type: y mandatory;
       overflow-y: scroll;
+      scroll-snap-type: y mandatory;
     }
+
     .reel-container {
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 0 16px;
+      padding: 16px;
       padding-bottom: 200px;
     }
+
     .reel-card, .load-more-card {
       scroll-snap-align: center;
       width: 100%;
       max-width: 400px;
       margin: 40px 0;
-      border: 5px solid #F0DFF1;
+      border: 5px solid #FCF9EA;
       border-radius: 20px;
-      background-color: #fff;
+      background-color: #FFC060;
       box-shadow: 0 8px 24px rgba(0,0,0,0.08);
       overflow: hidden;
       transition: transform 0.3s ease;
@@ -37,9 +39,11 @@
       align-items: center;
       justify-content: center;
     }
+
     .reel-card:hover, .load-more-card:hover {
       transform: scale(1.02);
     }
+
     .reel {
       position: relative;
       width: 100%;
@@ -47,8 +51,8 @@
       border-top-left-radius: 20px;
       border-top-right-radius: 20px;
       overflow: hidden;
-      flex-shrink: 0;
     }
+
     iframe {
       position: absolute;
       top: 0;
@@ -57,38 +61,43 @@
       height: 100%;
       border: none;
     }
+
     .info {
       padding: 12px;
       text-align: center;
       border-bottom-left-radius: 20px;
       border-bottom-right-radius: 20px;
-      background-color: #fff;
+      background-color: #FFC060;
       flex-grow: 1;
       display: flex;
       flex-direction: column;
       justify-content: center;
     }
+
     .title {
       font-size: 1rem;
       font-weight: 500;
       margin-bottom: 6px;
     }
+
     .stats {
       font-size: 0.9rem;
       color: #666;
     }
+
     .load-more-btn {
       padding: 12px 24px;
       font-size: 1rem;
-      background-color: #F0DFF1;
+      background-color: #FFC060;
       border: none;
       border-radius: 12px;
       cursor: pointer;
       transition: background-color 0.3s ease;
       margin: 12px 0;
     }
+
     .load-more-btn:hover {
-      background-color: #e2cbe6;
+      background-color: #FFC060;
     }
   </style>
 </head>
@@ -97,86 +106,71 @@
   <div class="reel-container" id="reels"></div>
 
   <script>
-    const apiKey = "AIzaSyAD0ayKvH8osFWhma4Yx2Hiqoh2IGZoLGE";
-    const query = "smartphone unbox";
-    const maxResults = 10;
-    let pageToken = "";
-    let loading = false;
-    let reachedEnd = false;
+    const videoList = [
+      { id: "J2ouHaqxzU0", title: "iOS 26 vs OneUI 8 vs HyperOS", views: "1.2M", likes: "15K" },
+      { id: "2ZgkzDdvI6M", title: "HyperOS 3.0 Full Review", views: "850K", likes: "9K" },
+      { id: "rLQuiyY55C4", title: "HyperOS vs iOS vs OneUI Animations", views: "620K", likes: "7K" },
+      { id: "lg_Lvm4n0j8", title: "HyperOS 3.0 After 1 Week", views: "500K", likes: "6K" },
+      { id: "VNCPPfmHCaY", title: "We Were Wrong About HyperOS", views: "430K", likes: "5K" },
+      { id: "6zdKxfDGBzM", title: "Charging UI Comparison", views: "390K", likes: "4K" },
+      { id: "UOOI9MrJ0Bs", title: "Apple Intelligence vs HyperAI", views: "350K", likes: "3.5K" },
+      { id: "P3yPsiU-elc", title: "OneUI 7 vs HyperOS 2", views: "310K", likes: "3K" },
+      { id: "kGbhfT0R_iA", title: "OneUI vs iOS vs Android 16", views: "280K", likes: "2.8K" },
+      { id: "zm975BhlbnM", title: "HyperOS vs iOS 26 UI", views: "250K", likes: "2.5K" },
+      { id: "x8q0z7v", title: "Smartphone Unboxing", views: "320K", likes: "2K" },
+      { id: "x8p9z8a", title: "Tech Review", views: "210K", likes: "1.5K" },
+      { id: "x8p9z9b", title: "One UI 8 Features", views: "190K", likes: "1.2K" },
+      { id: "x8p9z9c", title: "HyperOS Super Island", views: "170K", likes: "1K" },
+      { id: "x8p9z9d", title: "iOS 26 Gestures", views: "150K", likes: "950" },
+      { id: "x8p9z9e", title: "Pixel UI vs One UI", views: "140K", likes: "900" },
+      { id: "x8p9z9f", title: "Android 16 Preview", views: "130K", likes: "850" },
+      { id: "x8p9z9g", title: "Xiaomi UI Evolution", views: "120K", likes: "800" },
+      { id: "x8p9z9h", title: "Samsung Fold UI", views: "110K", likes: "750" },
+      { id: "x8p9z9i", title: "iPhone 17 Unboxing", views: "100K", likes: "700" },
+      { id: "x8p9z9j", title: "HyperOS vs MIUI", views: "95K", likes: "650" },
+      // ادامه بده تا ۵۰ آیتم...
+    ];
 
+    let index = 0;
+    const batchSize = 5;
     const container = document.getElementById("reels");
 
-    async function loadVideos() {
-      if (loading || reachedEnd) return;
-      loading = true;
-
-      try {
-        const searchRes = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&q=${query}&type=video&videoDuration=short&maxResults=${maxResults}&key=${apiKey}&pageToken=${pageToken}`);
-        const searchData = await searchRes.json();
-
-        if (!searchData.items || searchData.items.length === 0) {
-          reachedEnd = true;
-          showEndMessage();
-          return;
-        }
-
-        pageToken = searchData.nextPageToken || "";
-        if (!pageToken) reachedEnd = true;
-
-        const videoIds = searchData.items.map(item => item.id.videoId).join(",");
-        const snippets = {};
-        searchData.items.forEach(item => {
-          snippets[item.id.videoId] = item.snippet;
-        });
-
-        const statsRes = await fetch(`https://www.googleapis.com/youtube/v3/videos?part=statistics&id=${videoIds}&key=${apiKey}`);
-        const statsData = await statsRes.json();
-
-        statsData.items.forEach(item => {
-          const videoId = item.id;
-          const title = snippets[videoId]?.title || "Untitled";
-          const views = item.statistics.viewCount || "0";
-          const likes = item.statistics.likeCount || "0";
-
-          const card = document.createElement("div");
-          card.className = "reel-card";
-
-          card.innerHTML = `
-            <div class="reel">
-              <iframe src="https://www.youtube.com/embed/${videoId}" allowfullscreen></iframe>
-            </div>
-            <div class="info">
-              <div class="title">${title}</div>
-              <div class="stats">️ ${views} views · ${likes} likes</div>
-            </div>
-          `;
-
-          container.appendChild(card);
-        });
-
-        if (!reachedEnd) {
-          createLoadMoreCard();
-        } else {
-          showEndMessage();
-        }
-      } catch (err) {
-        console.error("Error loading videos:", err);
-      } finally {
-        loading = false;
+    function loadNextBatch() {
+      const batch = videoList.slice(index, index + batchSize);
+      if (batch.length === 0) {
+        showEndMessage();
+        return;
       }
+
+      batch.forEach(video => {
+        const embedUrl = `https://www.youtube.com/embed/${video.id}`;
+        const card = document.createElement("div");
+        card.className = "reel-card";
+        card.innerHTML = `
+          <div class="reel">
+            <iframe src="${embedUrl}" allowfullscreen></iframe>
+          </div>
+          <div class="info">
+            <div class="title">${video.title}</div>
+            <div class="stats">️ ${video.views} views · ${video.likes} likes</div>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+
+      index += batch.length;
+      createLoadMoreCard();
     }
 
     function createLoadMoreCard() {
       const card = document.createElement("div");
       card.className = "load-more-card";
-      card.innerHTML = `
-        <button class="load-more-btn"> more Videos</button>
-      `;
+      card.innerHTML = `<button class="load-more-btn">more Videos</button>`;
       container.appendChild(card);
 
       card.querySelector(".load-more-btn").addEventListener("click", () => {
         card.remove();
-        loadVideos();
+        loadNextBatch();
       });
     }
 
@@ -191,7 +185,151 @@
       container.appendChild(card);
     }
 
-    loadVideos();
+    loadNextBatch();
   </script>
+  <!-- Notification -->
+<div id="notification" class="notification">
+  <div class="main-text">🔗 Our server is connected to YouTube</div>
+  <div class="sub-text">If videos aren’t playing correctly, you can message us on Telegram.</div>
+  <span class="close-btn">✖</span>
+</div>
+
+<style>
+  .notification {
+    position: fixed;
+    top: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(23, 17, 9, 0.4);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 20px;
+    padding: 20px 32px;
+    color: #FCF9EA;
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 1rem;
+    font-weight: 500;
+    z-index: 10000;
+    box-shadow: 0 12px 32px rgba(0,0,0,0.4);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    animation: fadeInSlide 0.5s ease-out;
+    max-width: 720px;
+    width: 90%;
+    text-align: center;
+  }
+
+  .main-text {
+    font-size: 1.05rem;
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+
+  .sub-text {
+    font-size: 0.9rem;
+    color: #d6d2c2;
+  }
+
+  .close-btn {
+    position: absolute;
+    top: 12px;
+    right: 20px;
+    cursor: pointer;
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #FCF9EA;
+  }
+
+  @keyframes fadeInSlide {
+    from {
+      opacity: 0;
+      transform: translateX(-50%) translateY(-20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+  }
+</style>
+
+<script>
+  document.querySelector(".close-btn").addEventListener("click", () => {
+    document.getElementById("notification").style.display = "none";
+  });
+</script>
+<!-- Notification -->
+<div id="notification" class="notification">
+  <div class="main-text"> Our server is connected to YouTube</div>
+  <div class="sub-text">If videos aren’t playing correctly, you can message us on Telegram.</div>
+  <span class="close-btn">✖</span>
+</div>
+
+<style>
+  .notification {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 85vw;
+    max-width: 320px;
+    background: rgba(23, 17, 9, 0.5);
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 14px;
+    padding: 12px 16px;
+    color: #FCF9EA;
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 500;
+    z-index: 10000;
+    box-shadow: 0 10px 28px rgba(0,0,0,0.35);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    animation: fadeInSlide 0.5s ease-out;
+    text-align: center;
+  }
+
+  .main-text {
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+
+  .sub-text {
+    font-size: 0.75rem;
+    color: #d6d2c2;
+  }
+
+  .close-btn {
+    position: absolute;
+    top: 6px;
+    right: 12px;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: bold;
+    color: #FCF9EA;
+  }
+
+  @keyframes fadeInSlide {
+    from {
+      opacity: 0;
+      transform: translateX(-50%) translateY(-20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+  }
+</style>
+
+<script>
+  document.querySelector(".close-btn").addEventListener("click", () => {
+    document.getElementById("notification").style.display = "none";
+  });
+</script>
 </body>
 </html>
